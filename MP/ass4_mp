@@ -1,0 +1,118 @@
+%macro write 2				
+	mov rax,1			; System call for writing to standard output
+	mov rdi,1			; Standard output file descriptor
+	mov rsi,%1			; Message to be printed
+	mov rdx,%2			; Message length
+	syscall				; Call kernel
+%endmacro
+
+section .data
+	hexnum dq 00234567890ABCDEFh,0FF23456789ABCDEFh,00BCDEF1234567890h,0ADCDEF0123456789h,0A1234567ABCDEF8h,00567890123FEDCBAh
+	
+	msg db "Numbers are :",10						; Message to be printed before displaying the numbers
+	msglen equ $-msg
+	
+	msg1 db "Number of positive numbers are :"	; Message to be printed before displaying the count of positive numbers
+	msg1len equ $-msg1
+	
+	msg2 db "Number of negative numbers are :"	; Message to be printed before displaying the count of negative numbers
+	msg2len equ $-msg2
+	
+	pcount db 0									; Counter for positive numbers
+	ncount db 0									; Counter for negative numbers
+	endl db 10										; ASCII value for newline character
+	
+section .bss
+	temp resb 16			; Buffer to store 16 hex digits
+	temp1 resb 2			; Buffer to store 8-bit digits (in ASCII format)
+	
+section	.text
+   global _start   
+	
+_start:  
+	write msg,msglen		; Print the "Numbers are:" message
+	
+	mov rsi,hexnum			; Load the array of 64-bit hex numbers
+	mov rcx,6				; Loop counter (we have 6 numbers in the array)
+	
+	next:
+		mov rbx,[rsi]		; Load a 64-bit hex number from the array
+		push rsi			; Save the current array pointer to the stack
+		push rcx			; Save the loop counter to the stack
+		
+		call display_64		; Display the current number in hex format
+		bt rbx,63			; Check if the number is negative (if the MSB is 1)
+		jnc positive		; If not, jump to the "positive" label
+		inc byte[ncount]	; If yes, increment the negative number counter
+		jmp skip			; Jump to the "skip" label
+		
+	positive:
+		inc byte[pcount]	       ; Increment the positive number counter
+		
+	skip:
+		pop rcx				; Restore the loop counter from the stack
+		pop rsi				; Restore the array pointer from the stack
+		add rsi,8			; Move the array pointer to the next element
+		loop next			; Continue the loop
+	
+	write msg1,msg1len		; Print the "Number of positive numbers are:" message
+	mov bl,[pcount]			; Load the count of positive numbers into the BL register
+	call display_8			; Display the count of positive numbers in decimal format
+	
+	write msg2,msg2len		; Print the "Number of negative numbers are:" message
+	mov bl,[ncount]			; Load the count of negative numbers into the BL register
+	call display_8			; Display the count of negative numbers in decimal format
+	
+	mov rax,60				; System call for exiting the program
+	mov rdi,0				; Exit status code
+	syscal
+	
+
+display_8:
+							; display an 8-bit number in decimal format
+	mov rsi, temp1	                             ; move the address of temp1 to rsi
+	mov rcx, 2		                      ; set the loop counter to 2
+	
+	next_digit:
+		rol bl, 4	; rotate the bits in bl to the left by 4 bits
+		mov al, bl	; move the lower 8 bits of rbx to al
+		and al, 0FH	; clear the upper 4 bits of al
+		cmp al, 9	; compare the value in al with 9
+		jbe add30h	; if the value is less than or equal to 9, add 30h (the ASCII code for '0')
+		add al, 7	; if the value is greater than 9, add 7 to get the ASCII code for the appropriate letter
+		
+	add30h:
+		add al, 30h	; add 30h (the ASCII code for '0') to al to get the final ASCII code for the digit
+		mov [rsi], al	; move the value in al to the current byte of temp1
+		inc rsi		; increment the pointer to temp1
+		
+		loop next_digit	; decrement the loop counter and jump to next_digit if it's not zero
+		
+		write temp1, 2	; write the contents of temp1 to stdout as a 2-digit decimal number
+		write endl, 1	; write a newline character to stdout
+	ret	
+	
+display_64:
+	; display a 64-bit number in hexadecimal format
+	mov rsi, temp	; move the address of temp to rsi
+	mov rcx, 16		; set the loop counter to 16
+	
+	nextdigit:
+		rol rbx, 4	; rotate the bits in rbx to the left by 4 bits
+		mov al, bl	; move the lower 8 bits of rbx to al
+		and al, 0FH	; clear the upper 4 bits of al
+		cmp al, 9	; compare the value in al with 9
+		jbe add_30h	; if the value is less than or equal to 9, add 30h (the ASCII code for '0')
+		add al, 7	; if the value is greater than 9, add 7 to get the ASCII code for the appropriate letter
+		
+	add_30h:
+		add al, 30h	; add 30h (the ASCII code for '0') to al to get the final ASCII code for the digit
+		mov [rsi], al	; move the value in al to the current byte of temp
+		inc rsi		; increment the pointer to temp
+		
+		loop nextdigit	; decrement the loop counter and jump to nextdigit if it's not zero
+		
+		write temp, 16	; write the contents of temp to stdout as a 16-digit hexadecimal number
+		write endl, 1	; write a newline character to stdout
+		
+	ret

@@ -1,0 +1,109 @@
+%macro read 2            
+    mov rax, 0       ;macro template for read
+    mov rdi, 0
+    mov rsi, %1
+    mov rdx, %2
+    syscall
+%endmacro
+
+%macro write 2
+    mov rax, 1        ;macro template for write
+    mov rdi, 1
+    mov rsi, %1
+    mov rdx, %2
+    syscall
+%endmacro
+
+section .data        ;for declaring ,initialize data and constants
+    msg1 db "Enter number : ", 10
+    msg1_len equ $-msg1
+    msg2 db "Numer is = ", 10
+    msg2_len equ $-msg2
+    endl db 10
+
+section .bss              ;to declar variables
+    hexnum resq 5       ; resq reserved quadword
+    num resb 17         ; 16 elements + 1 enter
+    temp resb 16          ;resb reseve a byte
+    
+section .text
+    global _start
+    
+_start:
+    mov rcx, 5
+    mov rsi,hexnum
+    
+  nextnum:                   ;loop for 
+    
+    push rcx
+    push rsi
+    write msg1,msg1_len
+    read num,17
+    call ascii_hex64bit
+    pop rsi
+    pop rcx
+    mov [rsi],rbx
+    
+    add rsi,8             ;move pointer to next element
+    loop nextnum
+    
+  mov rsi,hexnum
+  mov rcx, 5
+    
+  nextdis:
+    
+    push rcx
+    push rsi
+    mov rbx,[rsi]
+    write msg2,msg2_len
+    call display64
+    pop rsi
+    pop rcx
+    add rsi,8
+    loop nextdis
+    
+  mov rax,60
+  mov rsi,60
+  syscall
+  
+ascii_hex64bit:
+    mov rbx,0          ;store the hexadecimal number
+    mov rsi,num        ;point to current elemnt
+    mov rcx,16  
+    
+next:
+    rol rbx,4       ;rotate left rbx by 4
+    mov al,[rsi]
+    cmp al,39h     ;compare if char is 0-9 or A-F
+    jbe sub30h     ; if  al>39h  not go to sub30h
+    sub al,7h      ;else
+    
+    sub30h:
+      sub al,30h    ;   sub
+    add bl,al
+    inc rsi
+    loop next
+    
+  ret
+
+display64 :
+      mov rsi, temp
+      mov rcx, 16
+    next1 :
+        rol rbx, 4     ;rotate left rbx by 4
+        mov al, bl
+        and al, 0Fh
+        cmp al, 9
+        jbe add30h
+		
+        add al, 7h
+		
+      add30h :
+            add al, 30h
+            mov [rsi], al
+            inc rsi         ;increment counter
+            loop next1
+			
+            write temp, 16
+            write endl, 1
+        ret

@@ -1,0 +1,107 @@
+%macro read 2            
+    mov rax, 0       ; macro template for read
+    mov rdi, 0
+    mov rsi, %1
+    mov rdx, %2
+    syscall
+%endmacro
+
+%macro write 2
+    mov rax, 1        ; macro template for write
+    mov rdi, 1
+    mov rsi, %1
+    mov rdx, %2
+    syscall
+%endmacro
+
+section .data                      ; section for declaring and initializing data and constants
+    msg1 db "Enter number : ", 10  ; message to prompt user to enter a number 10 is new line
+    msg1_len equ $-msg1            ; length of message 1 $ is program counter
+    msg2 db "Numer is = ", 10      ; message to display the converted hexadecimal number
+    msg2_len equ $-msg2            ; length of message 2
+    endl db 10                     ; new line character
+
+section .bss              ; section to declare variables
+    hexnum resq 5       ; reserve 5 quadwords to store the input numbers
+    num resb 17         ; reserve 17 bytes to store the user input (16 elements + 1 enter)
+    temp resb 16        ; reserve 16 bytes to store the converted hexadecimal number
+    
+section .text         ; start of executable code
+    global _start
+    
+_start:              ; entry point of the program
+    mov rcx, 5        ; set loop counter to 5 (for 5 input numbers)
+    mov rsi,hexnum    ; point rsi to the beginning of the hexnum array
+    
+  nextnum:            ; loop for reading in the 5 input numbers
+    
+    push rcx          ; preserve loop counter value
+    push rsi          ; preserve rsi value
+    write msg1,msg1_len    ; display prompt to user
+    read num,17            ; read in the user input
+    call ascii_hex64bit    ; convert user input to hexadecimal and store in rbx
+    pop rsi           ; restore rsi value
+    pop rcx           ; restore loop counter value
+    mov [rsi],rbx     ; store converted hexadecimal value in hexnum array
+    
+    add rsi,8         ; move pointer to next element (8 bytes for a quadword)
+    loop nextnum      ; repeat for next input number
+    
+  mov rsi,hexnum      ; point rsi to the beginning of the hexnum array
+  mov rcx, 5          ; set loop counter to 5 (for 5 input numbers)
+    
+  nextdis:            ; loop for displaying the converted hexadecimal numbers
+    
+    push rcx          ; preserve loop counter value
+    push rsi          ; preserve rsi value
+    mov rbx,[rsi]     ; move the hexadecimal value from memory to rbx
+    write msg2,msg2_len    ; display "Number is = " message
+    call display64    ; convert rbx to a string and display it
+    pop rsi           ; restore rsi value
+    pop rcx           ; restore loop counter value
+    add rsi,8         ; move pointer to next element (8 bytes for a quadword)
+    loop nextdis      ; repeat for next input number
+    
+  mov rax,60         ; set rax to exit syscall number
+  mov rsi,60         ; set rsi to exit status value
+  syscall            ; perform exit syscall
+  
+ascii_hex64bit:
+    mov rbx,0          ;store the hexadecimal number
+    mov rsi,num        ;point to current elemnt
+    mov rcx,16  
+    
+next:
+    rol rbx,4       ;rotate left rbx by 4
+    mov al,[rsi]
+    cmp al,39h     ;compare if char is 0-9 or A-F
+    jbe sub30h     ; if  al>39h  not go to sub30h
+    sub al,7h      ;else
+    
+    sub30h:
+    sub al,30h    ;   sub
+    add bl,al
+    inc rsi
+    loop next
+    
+  ret
+
+display64:
+    mov rsi, temp   ; set rsi to point to the temp buffer
+    mov rcx, 16     ; set rcx to 16, the number of characters to write
+next1:
+    rol rbx, 4      ; rotate left the contents of rbx by 4 bits
+    mov al, bl      ; move the contents of bl to al
+    and al, 0Fh     ; bitwise AND of al with 0Fh (15 in decimal) to get the last 4 bits
+    cmp al, 9       ; compare al with 9
+    jbe add30h      ; jump to add30h if al is less than or equal to 9
+    add al, 7h      ; add 7h (7 in decimal) to al to convert the number to a letter
+add30h:
+    add al, 30h     ; add 30h (48 in decimal) to al to convert the number to a character
+    mov [rsi], al   ; store the character in the temp buffer
+    inc rsi         ; increment the pointer to the next element of the buffer
+    loop next1      ; decrement rcx by 1 and jump to next1 if rcx is not zero
+write_temp:
+    write temp, 16  ; write the contents of the temp buffer to the standard output
+    write endl, 1   ; write a newline character to the standard output
+    ret             ; return from the function
