@@ -9,8 +9,9 @@ class graph
      void insertnode(int m);
      void bfs();
      void display();
-     void dfs();
+     void dfs(int k);
      void remove_edge(int m,int n);
+     bool connected();
 };
 
 void graph::insert(int m,int n)
@@ -74,20 +75,11 @@ void graph::bfs()
 }
 
 
-void graph::dfs()
+void graph::dfs(int k)
 {
        stack<int> st;
        int ar[20]={0};
-       int k;
-       for(int i=1;i<=20;i++)
-       {
-        if(v[i].size()!=0)
-        {
-            k=i;
-            ar[i]=i;
-            break;
-        }
-       }
+       ar[k]=1;
         st.push(k);
         vector<int> dfs;
         int a;
@@ -111,6 +103,24 @@ void graph::dfs()
            }
 }
 
+bool graph::connected()
+{
+   vector<int> vec;
+   for(int i=0;i<20;i++)
+   {
+        if(!v[i].size())
+        {
+          vec.push_back(i);
+        }
+   }
+   for(int i=0;i<vec.size();i++)
+   {
+      
+   }
+
+
+
+}
 
 void graph::remove_edge(int m,int n)
 {
@@ -143,12 +153,12 @@ int main()
   g.insert(1,3);
   g.insert(2,4);
   g.insert(4,3);
-  g.display();
+  //g.display();
 //   g.bfs();
- // g.dfs();
- g.remove_edge(1,4);
- cout<<endl;
-      g.display();
+  g.dfs(1);
+ //g.remove_edge(1,4);
+// cout<<endl;
+      //g.display();
 
  
 
