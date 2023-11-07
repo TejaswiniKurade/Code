@@ -1,0 +1,408 @@
+A. Find the names of all employees who live in the same city and on the same street as their manager. (use JOIN)
+
+sql
+
+SELECT e1.name AS EmployeeName
+FROM Employee e1
+JOIN Employee e2 ON e1.city = e2.city AND e1.street = e2.street
+JOIN Manager m ON e1.name = m.name;
+
+B. Find the names of all employees who do not work for F.B.C. (using a sub-query)
+
+sql
+
+SELECT name
+FROM Employee
+WHERE name NOT IN (SELECT name FROM Works WHERE company_name = 'F.B.C.');
+
+C. Find the names, street address, and cities of residence of all employees who work for F.B.C. and earn more than $10,000 per annum. (use JOIN)
+
+sql
+
+SELECT e.name AS EmployeeName, e.street AS Street, e.city AS City
+FROM Employee e
+JOIN Works w ON e.name = w.name
+WHERE w.company_name = 'F.B.C.' AND w.salary > 10000;
+
+D. Find all companies located in every city in which S.B.C. is located.
+
+sql
+
+SELECT DISTINCT company_name
+FROM Works
+WHERE company_name <> 'S.B.C.' AND city NOT IN (
+  SELECT city
+  FROM Works
+  WHERE company_name = 'S.B.C.'
+);
+
+E. Create a table for the entire employee's salary info based on the existing Works table.
+
+sql
+
+CREATE TABLE EmployeeSalary AS
+SELECT name, salary
+FROM Works;
+
+F. Insert values into the above-created table from the Works table.
+
+sql
+
+INSERT INTO EmployeeSalary (name, salary)
+SELECT name, salary
+FROM Works;
+
+G. Find the names of all employees who earn more than every employee of S.B.C.
+
+sql
+
+SELECT w1.name AS EmployeeName
+FROM Works w1
+WHERE w1.salary > ALL (SELECT w2.salary FROM Works w2 WHERE w2.company_name = 'S.B.C.');
+
+H. Assign the manager of Parina to Alok. (UPDATE using a subquery)
+
+sql
+
+UPDATE Manager
+SET manager_name = (SELECT manager_name FROM Manager WHERE name = 'Parina')
+WHERE name = 'Alok';
+
+I. Create a view that will display all company names located in Pune.
+
+sql
+
+CREATE VIEW PuneCompanies AS
+SELECT company_name
+FROM Works
+WHERE city = 'Pune';
+
+
+
+
+
+SELECT I.InvNo, SUM(I.Price * II.Qty) AS "Total Price"
+FROM Invoice I
+JOIN Invitem II ON I.InvNo = II.InvNo
+GROUP BY I.InvNo;
+
+
+SELECT InvNo, InvDate, DATE_ADD(InvDate, INTERVAL 2 MONTH) AS "Due Date" FROM Invoice;
+
+
+-- Create a function to check the existence of a department
+DELIMITER //
+CREATE FUNCTION DepartmentExists(IN p_department_no INT) RETURNS BOOLEAN
+BEGIN
+    DECLARE v_exists BOOLEAN;
+    SET v_exists = EXISTS (SELECT 1 FROM DEPT WHERE department_no = p_department_no);
+    RETURN v_exists;
+END;
+//
+DELIMITER ;
+
+-- Create an anonymous block to call the function
+DELIMITER //
+BEGIN
+    DECLARE v_department_no INT;
+    
+    SET v_department_no = 101; -- Replace with the department number to check
+    
+    IF DepartmentExists(v_department_no) THEN
+        SELECT 'Department exists.';
+    ELSE
+        SELECT 'Department does not exist.';
+    END IF;
+END;
+//
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE CalculateStudentGrade()
+BEGIN
+    DECLARE v_student_id INT;
+    DECLARE v_score INT;
+    DECLARE v_grade CHAR(1);
+    
+    -- Declare a cursor for selecting students
+    DECLARE student_cursor CURSOR FOR
+        SELECT student_id, score FROM students WHERE student_id <= 10;
+    
+    -- Loop through the students
+    OPEN student_cursor;
+    student_loop: LOOP
+        FETCH student_cursor INTO v_student_id, v_score;
+        IF v_student_id IS NULL THEN
+            LEAVE student_loop;
+        END IF;
+        
+        -- Calculate the grade (customize the grading criteria as needed)
+        CASE
+            WHEN v_score >= 90 THEN SET v_grade = 'A';
+            WHEN v_score >= 80 THEN SET v_grade = 'B';
+            WHEN v_score >= 70 THEN SET v_grade = 'C';
+            WHEN v_score >= 60 THEN SET v_grade = 'D';
+            ELSE SET v_grade = 'F';
+        END CASE;
+        
+        -- Print the result
+        SELECT 'Student ID: ', v_student_id, ', Score: ', v_score, ', Grade: ', v_grade;
+    END LOOP;
+    
+    CLOSE student_cursor;
+END;
+//
+DELIMITER ;
+
+db.Employee.aggregate([
+  {
+    $skip: 2
+  },
+  {
+    $group: {
+      _id: "$id",
+      sum: { $sum: "$amounts" }
+    }
+  }
+])
+
+DELIMITER //
+
+CREATE PROCEDURE proc(IN s int)
+BEGIN
+    DECLARE id INT;
+    DECLARE n VARCHAR(255); -- Use a suitable length for VARCHAR
+    DECLARE vsalary int; -- Corrected data type for salary
+    DECLARE flag INT DEFAULT 0;
+    
+    -- Declare a cursor for retrieving employee information
+    DECLARE cur CURSOR FOR
+    SELECT id, name, salary
+    FROM employee
+    WHERE salary > s;
+
+    -- Handle not found condition
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET flag = 1;
+
+    OPEN cur;
+
+    it: LOOP
+        IF flag = 1 THEN
+            LEAVE it;
+        END IF;
+        
+        FETCH cur INTO id, n, vsalary;
+        SELECT id, n, vsalary;
+    END LOOP;
+
+    CLOSE cur;
+END;
+//
+
+DELIMITER ;
+
+
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE proc4(IN s INT)
+BEGIN
+    DECLARE vid INT;
+    DECLARE vname VARCHAR(255); -- Use a suitable length for VARCHAR
+    DECLARE vsalary INT; -- Use the appropriate data type for salary
+    DECLARE flag INT DEFAULT 0;
+    
+    -- Declare a cursor for retrieving employee information
+    DECLARE cur CURSOR FOR
+    SELECT id, name, salary
+    FROM employee
+    WHERE salary > s;
+
+    -- Handle not found condition
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET flag = 1;
+
+    OPEN cur;
+
+    it: LOOP
+        IF flag = 1 THEN
+            LEAVE it;
+        END IF;
+        
+        FETCH cur INTO vid, vname, vsalary;
+        select vid,vname,vsalary;
+    END LOOP;
+
+    CLOSE cur;
+END;
+//
+
+DELIMITER ;
+
+
+after insert triggere
+
+create trigger t_insert
+after insert on library 
+for each row
+insert into audit values (new.roll,new.name,new.issuedate,new.bookname,'p',current_timestamp);
+
+create trigger t_delete
+after delete on library 
+for each row
+insert into audit values (old.roll,old.name,old.issuedate,old.bookname,'d',current_timestamp);
+
+create trigger t_update
+after update on library 
+for each row
+insert into audit values (new.roll,new.name,new.issuedate,new.bookname,'u',current_timestamp);
+
+import mysql.connector
+con=mysql.connector.connect(user='7360',host='localhost',database='newdb',password='Your_Strong_Password_123')
+cursor=con.cursor()
+while(1):
+    print("Menu\n 1.Insert \n 2.Delete \n 3. update \n 4.show details \n 6.update name \n5.Exit")
+    n=int(input("Enter choice = "))
+    if(n==1):
+       r=int(input("Enter roll no ="))
+       n=input("Enter name =")
+       m=int(input("Enter marks = "))
+       cursor.execute(f"insert into student values({r},'{n}',{m});")
+       con.commit()
+    elif(n==3):
+       r=int(input("Enter roll no ="))
+       m=int(input("Enter marks = "))
+       cursor.execute(f"update student set marks={m} where roll={r};")
+       con.commit()
+    elif(n==6):
+       r=int(input("Enter roll no ="))
+       m=input("Enter name = ")
+       cursor.execute(f"update student set name='{m}' where roll={r};")
+       con.commit()
+    elif(n==2):
+       r=int(input("Enter roll no ="))
+       cursor.execute(f"delete from student where roll={r};")
+       con.commit()
+    elif(n==4):
+       cursor.execute(f"select * from student;")
+       a=cursor.fetchall()
+       print(a)
+       
+    else:
+       exit()
+     
+
+
+
+
+
+
+
+create procedure cal(in r int)
+begin
+declare v_area decimal(10,2);
+if r<5 or r>9 then
+   select 'R is not present';
+else
+   set v_area=3.14*r*r;
+   insert into area values(r,v_area);
+end if;
+end
+//
+
+
+
+
+
+
+
+
+
+
+
+
+
+create procedure addclass(in m int,out class varchar(10))
+begin
+if m<1500 and m>700 then set class='DIST';
+elseif m>300 then set class='FC';
+else  set class='FAIL';
+end if;
+end
+
+
+create function func2 (r int)
+returns int deterministic
+begin
+declare fname varchar (20);
+declare fmarks int;
+declare fclass varchar(20);
+select name ,total_marks into fname ,fmarks from stud_marks
+where rollno =r;
+call addclass(fmarks,@fclass);
+insert into Result values(r,fname,@fclass);
+return r;
+end
+
+create procedure cur()
+begin
+declare r int;
+declare n varchar(20);
+declare flag int default 0;
+declare cur cursor for select roll,name from old;
+declare continue handler for not found set flag=1;
+open cur;
+it : loop
+if flag=1 then 
+leave it;
+end if;
+fetch cur into r,n;
+if not exists (select roll from new where roll=r) then
+ insert into new values(r,n);
+ end if;
+ end loop it;
+ close cur;
+end
+//
+
+create procedure addfine(in r int ,in n varchar(50))
+begin
+declare issue_date Date;
+declare cur_date date;
+declare diff int;
+declare message varchar (255);
+declare v_status char(1);
+declare vfine int;
+select dateofissue ,status into
+ issue_date,v_status from borrower where
+Roll_no=r and bookname=n;
+if issue_date is NULL then 
+       select 'Not present';
+else if v_status ='R' then 
+       signal sqlstate '45000' set message_text='Not present';
+else
+       set cur_date =curdate();
+       set diff =datediff(issue_date,cur_date);
+       if diff between 15 and 30 then 
+            set vfine=diff*5;
+       elseif diff>30 then 
+             set vfine=diff*30;
+       else
+            vfine=0;
+       end if;
+       if fine>0 then
+           insert into fine values(r,cur_date,vfine);
+           update borrower set status ='R'
+           where Roll_no=r;
+         end if;
+end if;
+END
+            
+     
+
+
+
+
+
